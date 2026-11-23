@@ -4,7 +4,11 @@ Leaklens checks a coding benchmark for tasks whose own text hands over the fix: 
 
 ![Leaklens on SWE-bench Verified: type a task id, see the flag and the quoted sentence from the issue that states the fix](media/leaklens-demo.gif)
 
-The hosted tables at [leaklens.grain64.com](https://leaklens.grain64.com) have every SWE-bench Verified and Lite task checked already ([the same demo as an MP4 with captions, under a minute](https://leaklens.grain64.com/leaklens-demo.mp4)). This repository is the engine behind them, for your own tasks.
+The hosted tables at [leaklens.grain64.com](https://leaklens.grain64.com/?ref=gh-1) have every SWE-bench Verified and Lite task checked already ([the same demo as an MP4 with captions, under a minute](https://leaklens.grain64.com/leaklens-demo.mp4)). This repository is the engine behind them, for your own tasks.
+
+## Check our flags
+
+Check our flags yourself: 16 tasks, about 15 minutes, every answer published on the page, agreeing or not. Each row gives the quote from the task and the gold-patch line it matches: [open the checklist](https://leaklens.grain64.com/validation?ref=gh-1#person-check).
 
 ## Quickstart
 
