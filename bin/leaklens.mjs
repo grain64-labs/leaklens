@@ -8,6 +8,7 @@ import { makeClient, JudgeError } from '../src/judge.mjs';
 import { toJsonl, summary } from '../src/report.mjs';
 import { METHODOLOGY_VERSION, procedureOf } from '../src/definitions.mjs';
 import { parseResolved, rescore, report, inputNotes, RescoreInputError } from '../src/rescore.mjs';
+import { recount, verify, proReport } from '../src/pro-v2.mjs';
 
 const VERSION = JSON.parse(fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version;
 
@@ -15,6 +16,7 @@ const HELP = `leaklens ${VERSION} (methodology ${METHODOLOGY_VERSION})
 
 Usage: leaklens check <benchmark.jsonl> [options]
        leaklens rescore <results> [--benchmark verified|lite] [--label <name>] [--json]
+       leaklens pro-v2 [--tasks <swe-bench-pro.jsonl>] [--json]
 
 Reads SWE-bench-style tasks (JSONL or a JSON array; fields instance_id, problem_statement, patch,
 optional repo, hints_text, created_at) and writes, per task, the tier, state and evidence.
@@ -57,12 +59,17 @@ rescore: your score on all tasks and on the tasks outside the Leaklens headline 
   --json               print the numbers as JSON
   --flags <file>       another flag file (default: data/headline-flags.json, the Leaklens dataset's flags)
 
+pro-v2: the Leaklens figure for SWE-bench Pro V2 (642 tasks), recounted from data/swe-bench-pro-v2.json.
+  --tasks <file>       your copy of ScaleAI/SWE-bench_Pro (default config) as JSONL or JSON: every stored
+                       quote and patch span is checked word for word against it. No network, no model.
+  --json               print the numbers as JSON
+
 Exit codes: 0 checked, 1 judge or git error, 2 bad input or usage.
 Definitions: DEFINITIONS.md, https://leaklens.grain64.com/methodology`;
 
 function parseArgs(argv) {
   const o = { _: [] };
-  const takes = new Set(['out', 'repos', 'model', 'base-url', 'concurrency', 'benchmark', 'label', 'flags']);
+  const takes = new Set(['out', 'repos', 'model', 'base-url', 'concurrency', 'benchmark', 'label', 'flags', 'tasks']);
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === '-h' || a === '--help') o.help = true;
@@ -86,7 +93,8 @@ async function main() {
   if (o.help || !o._.length) return console.log(HELP);
   const [cmd, file, ...extra] = o._;
   if (cmd === 'rescore') return rescoreCmd(o, file, extra);
-  if (cmd !== 'check') throw new InputError(`unknown command "${cmd}" (try: leaklens check <benchmark.jsonl> or leaklens rescore <results>)`);
+  if (cmd === 'pro-v2') return proV2Cmd(o, file);
+  if (cmd !== 'check') throw new InputError(`unknown command "${cmd}" (try: leaklens check <benchmark.jsonl>, leaklens rescore <results> or leaklens pro-v2)`);
   if (!file) throw new InputError('leaklens check needs a benchmark file');
   if (extra.length) throw new InputError(`unexpected argument "${extra[0]}"`);
   for (const k of ['tiebreak', 'no-tiebreak', 'reasoning-effort', 'no-reasoning-effort']) if (o[k] && !o.judge) throw new InputError(`--${k} needs --judge`);
@@ -155,6 +163,20 @@ async function main() {
     process.stdout.write(md);
     process.stdout.write(`\nWrote ${path.join(outDir, 'results.jsonl')} and ${path.join(outDir, 'summary.md')}\n`);
   }
+}
+
+function proV2Cmd(o, extra) {
+  if (extra) throw new InputError(`unexpected argument "${extra}" (pro-v2 takes --tasks <file>)`);
+  const data = JSON.parse(fs.readFileSync(new URL('../data/swe-bench-pro-v2.json', import.meta.url), 'utf8'));
+  const r = recount(data);
+  let v = null;
+  if (o.tasks) {
+    const { tasks } = readTasks(o.tasks);
+    v = verify(data, new Map(tasks.map((t) => [t.instance_id, t])));
+  }
+  if (o.json) console.log(JSON.stringify({ verdict: data.verdict, rule: data.rule, bar: data.bar, ...r, check: v }, null, 2));
+  else console.log(proReport(data, r, v));
+  if (!r.agrees || (v && !v.ok)) process.exitCode = 1;
 }
 
 function rescoreCmd(o, file, extra) {

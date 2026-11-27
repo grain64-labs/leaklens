@@ -8,7 +8,7 @@
   "files": ["bin", "src", "data", "DEFINITIONS.md", "README.md", "LICENSE"],
   "engines": { "node": ">=18.17" },
   "scripts": {
-    "test": "node --test test/engine.test.mjs test/rescore.test.mjs",
+    "test": "node --test test/engine.test.mjs test/rescore.test.mjs test/pro-v2.test.mjs",
     "definitions": "node scripts/gen-definitions.mjs"
   },
   "keywords": ["swe-bench", "benchmark", "contamination", "leakage", "evaluation"]

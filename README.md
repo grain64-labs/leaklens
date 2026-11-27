@@ -100,6 +100,19 @@ SWE-bench Verified (Leaklens headline flags, methodology m1.1, as of 2026-11-08)
 
 IDs that are not in the benchmark are listed and left out of every count. A fix commit dated before a cutoff shows that exposure was possible, not that a model trained on it.
 
+## SWE-bench Pro V2
+
+`data/swe-bench-pro-v2.json` holds the Leaklens reading of all 642 tasks of SWE-bench Pro V2 (`ScaleAI/SWE-bench_Pro`, config `default`, revision `2d52cb3`). **2 of 642 are counted**: both are Tier A, where both checks agreed on a quote that states the fix. None are Tier C. **2 is a floor, not a clean count.** A blind AI read of 30 tasks that were not counted found that 6 of them state the fix. Pro V2 statements often describe the refactor itself, and Tier A's rule asks for the fix text. An added reader for statements that name the edit (the `edit_reader` column) flagged 71 more, but it fails the same bar: a fresh blind AI read of 30 tasks it did not count still found 5 that state the fix (given as the cause, the steps or the helpers to replace), and 8 of 30 of its flags only described wanted behaviour, so none of the 71 is counted. The file also carries each task's tier, the extra edit reader's label, and the quote (at most 170 characters). It holds no problem statement and no patch.
+
+```sh
+node bin/leaklens.mjs pro-v2                       # recount the figure from the shipped file
+node bin/leaklens.mjs pro-v2 --tasks pro-v2.jsonl  # also check every quote and patch span against your own copy
+```
+
+To make `pro-v2.jsonl` (needs the Python `datasets` package):
+`load_dataset("ScaleAI/SWE-bench_Pro", split="test", revision="2d52cb3df914a3fcf80c7f66738b3a88ae37fc50").to_json("pro-v2.jsonl")`.
+The same rows are on Hugging Face as the `swe-bench-pro-v2` config of `grain64-labs/leaklens-swe-bench`. How they were checked: https://leaklens.grain64.com/benchmarks/swe-bench-pro#bar
+
 ## What a flag is and is not
 
 - **Tier A**: the issue or discussion states the change that fixes the problem (replacement code, a diff, or a sentence naming the exact edit).
