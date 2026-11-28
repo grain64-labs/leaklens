@@ -68,5 +68,9 @@ export const STATES = [
   { id: 'rule_clear', meaning: 'Checked by the deterministic rules only (no --judge): no Tier C match and no fix-PR link. The text was not read by a model.' },
 ];
 
+// BEN-848 (R BEN-841 item 1): on SWE-bench Verified (m1.1, 2026-11-08) the published flags by kind. A rules-only run finds only
+// the patch-line kind (Tier C); site-build.mjs stops the build when these differ from the public CSV.
+export const VERIFIED_SPLIT = { patchLine: 18, total: 149 };
+
 // Wording rule for every output: what the public text and history contain, never a claim about training.
 export const WORDING = 'A flag means the task text hands over the fix. The fix commit date, when shown, is context and never makes a flag. A flag never says a model was trained on a task or memorised it.';

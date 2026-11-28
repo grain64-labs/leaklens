@@ -336,3 +336,18 @@ test('BEN-620: --judge never reads a reply with no verdict as none: it retries o
   assert.ok(!fs.existsSync(path.join(out, 'results.jsonl')), 'no results file with a made-up none');
   assert.ok(stub.requests.length >= 2 && stub.requests.length <= 4);
 });
+
+test('a rules-only run with 0 Tier C says what it did not read and gives the --judge command; a run with flags does not', async () => {
+  const dir = tmp();
+  const clean = path.join(dir, 'clean.jsonl');
+  fs.writeFileSync(clean, JSON.stringify({ instance_id: 'acme__dates-8', problem_statement: 'parse_date fails on a trailing space.', patch: '--- a/dates.py\n+++ b/dates.py\n@@ -1,1 +1,2 @@\n def parse_date(value):\n+    value = value.strip()\n' }) + '\n');
+  const r = await run(['check', clean, '--out', path.join(dir, 'o1')]);
+  assert.equal(r.code, 0, r.stderr);
+  const s = read(path.join(dir, 'o1/summary.md'));
+  assert.match(s, /\*\*0 of 1 tasks \(0%\)/);
+  assert.match(s, /0 here is not "clean"\. Without `--judge` this run finds the patch-line kind only; on SWE-bench Verified that was 18 of the 149 published flags\./);
+  assert.ok(s.includes(`LEAKLENS_API_KEY="$YOUR_KEY" node bin/leaklens.mjs check ${clean} --out ${path.join(dir, 'o1')} --judge --model "$MODEL"`), s);
+  const r2 = await run(['check', FIXTURE, '--out', path.join(dir, 'o2')]);
+  assert.equal(r2.code, 0, r2.stderr);
+  assert.doesNotMatch(read(path.join(dir, 'o2/summary.md')), /is not "clean"/);
+});

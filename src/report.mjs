@@ -1,5 +1,8 @@
 // results.jsonl (one row per task, input order) and summary.md. No timestamps or paths, so the same input gives the same bytes.
-import { METHODOLOGY_VERSION, WORDING, PROCEDURE_TEXT } from './definitions.mjs';
+import { METHODOLOGY_VERSION, WORDING, PROCEDURE_TEXT, VERIFIED_SPLIT } from './definitions.mjs';
+
+// A path as the user typed it, quoted for a POSIX shell when it needs to be.
+const sh = (p) => (/^[\w@%+=:,./~-]+$/.test(p) ? p : "'" + String(p).replace(/'/g, "'\\''") + "'");
 import { rejectedLine } from './input.mjs';
 
 export const toJsonl = (rows) => rows.map((r) => JSON.stringify(r)).join('\n') + '\n';
@@ -23,7 +26,7 @@ export function publishedLine(rows, flags) {
   return `Leaklens public table for ${which}: ${best.flagged} flagged (Tier A where both checks agreed, or Tier C), methodology ${best.b.methodologyVersion}, as of ${best.b.asOf}: ${flags.source || 'https://leaklens.grain64.com'}/benchmarks/${best.slug}`;
 }
 
-export function summary(rows, { input, judged, model, repos, flags, procedure = judged ? 'm1.1' : 'rules', rejected = [], construction = null, reversed = false }) {
+export function summary(rows, { input, rerun = null, judged, model, repos, flags, procedure = judged ? 'm1.1' : 'rules', rejected = [], construction = null, reversed = false }) {
   const n = rows.length;
   const count = (f) => rows.filter(f).length;
   const tiers = { A: count((r) => r.tier === 'A'), B: count((r) => r.tier === 'B'), C: count((r) => r.tier === 'C') };
@@ -47,6 +50,17 @@ export function summary(rows, { input, judged, model, repos, flags, procedure = 
     ? `**${flagged} of ${n} tasks flagged${pct(flagged)}: Tier A or B read by \`${model}\`, or Tier C by rule.**`
     : `**${tiers.C} of ${n} tasks${pct(tiers.C)}: gold-patch lines in the issue or discussion (Tier C). Tier A/B not read.**`);
   L.push('');
+  // BEN-848: a rules-only 0 is the weak half of the method, so it says so and gives the command that reads the rest.
+  if (!judged && tiers.C === 0 && n) {
+    L.push(`0 here is not "clean". Without \`--judge\` this run finds the patch-line kind only; on SWE-bench Verified that was ${VERIFIED_SPLIT.patchLine} of the ${VERIFIED_SPLIT.total} published flags. Add \`--judge\` (your API key or a local endpoint) for the quoted-sentence kind (Tier A/B):`);
+    L.push('');
+    const args = rerun ? `${sh(rerun.file)} --out ${sh(rerun.out)}` : `${sh(input)} --out out`;
+    L.push('```sh');
+    L.push(`LEAKLENS_API_KEY="$YOUR_KEY" node bin/leaklens.mjs check ${args} --judge --model "$MODEL"`);
+    L.push(`node bin/leaklens.mjs check ${args} --judge --base-url http://localhost:11434/v1 --model "$MODEL"`);
+    L.push('```');
+    L.push('');
+  }
   const pub = publishedLine(rows, flags);
   if (pub) { L.push(pub); L.push(''); }
   L.push('| Signal | Tasks |');

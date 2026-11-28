@@ -13,7 +13,14 @@ node bin/leaklens.mjs check tasks.jsonl --out out
 cat out/summary.md
 ```
 
-The summary says "1 of 1 tasks (100%): gold-patch lines in the issue or discussion (Tier C)" and lists the task; per-task evidence is in `out/results.jsonl`. A flag means the task text hands over the fix; it says nothing about what any model did. `--judge` adds the quoted-sentence tier (Tier A/B) on your own API key or a local model: see [Quickstart](#quickstart).
+The summary says "1 of 1 tasks (100%): gold-patch lines in the issue or discussion (Tier C)" and lists the task; per-task evidence is in `out/results.jsonl`. A flag means the task text hands over the fix; it says nothing about what any model did.
+
+Without `--judge` this finds the patch-line kind only; on SWE-bench Verified that was 18 of the 149 flags, so a 0 is not "clean". Add `--judge` (your API key or a local endpoint) for the quoted-sentence kind (Tier A/B, the procedure behind the public tables):
+
+```sh
+LEAKLENS_API_KEY="$YOUR_KEY" node bin/leaklens.mjs check tasks.jsonl --out out --judge --model "$MODEL"
+node bin/leaklens.mjs check tasks.jsonl --out out --judge --base-url http://localhost:11434/v1 --model "$MODEL"
+```
 
 Every SWE-bench Verified and Lite task, checked with this engine, is browsable at [leaklens.grain64.com](https://leaklens.grain64.com/?ref=gh-1), and the per-task flags are on Hugging Face as [grain64-labs/leaklens-swe-bench](https://huggingface.co/datasets/grain64-labs/leaklens-swe-bench).
 

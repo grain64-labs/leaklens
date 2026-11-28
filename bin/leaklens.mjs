@@ -157,7 +157,7 @@ async function main() {
   fs.writeFileSync(path.join(outDir, 'results.jsonl'), toJsonl(rows));
   let flags = null;
   try { flags = JSON.parse(fs.readFileSync(o.flags || new URL('../data/headline-flags.json', import.meta.url), 'utf8')); } catch (e) { if (o.flags) throw new InputError(`cannot read the flag file ${o.flags}: ${e.code || e.message}`); }
-  const md = summary(rows, { input: path.basename(file), judged: !!client, model, repos: !!o.repos, flags, procedure, rejected, construction, reversed: !!o['reverse-patch'] });
+  const md = summary(rows, { input: path.basename(file), rerun: { file, out: outDir }, judged: !!client, model, repos: !!o.repos, flags, procedure, rejected, construction, reversed: !!o['reverse-patch'] });
   fs.writeFileSync(path.join(outDir, 'summary.md'), md);
   if (!o.quiet) {
     process.stdout.write(md);
