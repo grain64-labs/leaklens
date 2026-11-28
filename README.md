@@ -1,10 +1,25 @@
 # Leaklens
 
-Leaklens checks a coding benchmark for tasks whose own text hands over the fix: the issue or its comments state the change, or lines of the gold patch reappear in the text. It writes one row per task, with the sentence quoted, the tier and, if you point it at a local clone, the date of the upstream fix commit. It runs on your machine. The patch-overlap tier needs no network and no model; the quoted-sentence tier uses your own API key or a local endpoint. "Flagged" means the task text hands over the fix. It says nothing about what any model did.
+Check your own coding benchmark for leaked fixes before you release it. Leaklens reads each task of a SWE-bench-style benchmark and flags the ones whose own text hands over the fix: lines the gold patch adds, repeated in the issue or its comments. It runs on your machine: Node 18.17 or later, no dependencies, no network, no model, no account.
+
+## Check your own benchmark
+
+Your file: one JSON object per line with `instance_id`, `problem_statement` and `patch` (the gold patch as a unified diff); `hints_text`, `repo` and `created_at` are used when present. The `printf` line writes a one-task example; use your own file instead.
+
+```sh
+git clone https://github.com/grain64-labs/leaklens && cd leaklens
+printf '%s\n' '{"instance_id":"acme__dates-7","problem_statement":"parse_date fails on a trailing space. Strip it first: value = value.strip()","patch":"--- a/dates.py\n+++ b/dates.py\n@@ -1,1 +1,2 @@\n def parse_date(value):\n+    value = value.strip()\n"}' > tasks.jsonl
+node bin/leaklens.mjs check tasks.jsonl --out out
+cat out/summary.md
+```
+
+The summary says "1 of 1 tasks (100%): gold-patch lines in the issue or discussion (Tier C)" and lists the task; per-task evidence is in `out/results.jsonl`. A flag means the task text hands over the fix; it says nothing about what any model did. `--judge` adds the quoted-sentence tier (Tier A/B) on your own API key or a local model: see [Quickstart](#quickstart).
+
+Every SWE-bench Verified and Lite task, checked with this engine, is browsable at [leaklens.grain64.com](https://leaklens.grain64.com/?ref=gh-1), and the per-task flags are on Hugging Face as [grain64-labs/leaklens-swe-bench](https://huggingface.co/datasets/grain64-labs/leaklens-swe-bench).
 
 ![Leaklens on SWE-bench Verified: type a task id, see the flag and the quoted sentence from the issue that states the fix](media/leaklens-demo.gif)
 
-The hosted tables at [leaklens.grain64.com](https://leaklens.grain64.com/?ref=gh-1) have every SWE-bench Verified and Lite task checked already ([the same demo as an MP4 with captions, under a minute](https://leaklens.grain64.com/leaklens-demo.mp4)). This repository is the engine behind them, for your own tasks.
+The demo above is the hosted tables; the same demo as an MP4 with captions, under a minute: [leaklens-demo.mp4](https://leaklens.grain64.com/leaklens-demo.mp4).
 
 ## Check our flags
 
